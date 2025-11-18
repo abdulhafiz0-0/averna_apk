@@ -13,20 +13,28 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
+  String _selectedRole = '';
 
   void _login() {
     if (_formKey.currentState!.validate()) {
+      if (_selectedRole.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a role')),
+        );
+        return;
+      }
+
       setState(() {
         _isLoading = true;
       });
 
-      // TODO: Replace this with your actual login logic (API call, Firebase, etc.)
+      // TODO: Replace this with actual login logic
       Future.delayed(const Duration(seconds: 2), () {
         setState(() {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login successful!')),
+          SnackBar(content: Text('Login successful as $_selectedRole!')),
         );
 
         // Example navigation to dashboard
@@ -42,69 +50,128 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  Widget _roleButton(String role, String description) {
+    final bool isSelected = _selectedRole == role;
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected ? Colors.blue : Colors.grey[300],
+        foregroundColor: isSelected ? Colors.white : Colors.black,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      ),
+      onPressed: () {
+        setState(() {
+          _selectedRole = role;
+        });
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(role, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(description, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$')
-                      .hasMatch(value)) {
-                    return 'Enter a valid email';
-                  }
-                  return null;
-                },
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const SizedBox(height: 60),
+            const Text(
+              'Learning Center',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Welcome\nSign in to track attendance, manage fees, and permissions.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 32),
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$')
+                          .hasMatch(value)) {
+                        return 'Enter a valid email';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.lock),
+                    ),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your password';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: _roleButton('Teacher', 'Take attendance, view payments'),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _roleButton('Admin', 'Manage users & school settings'),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _roleButton('Superadmin', 'Full control: admins, roles, permissions'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _login,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Sign in', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(
-                          color: Colors.white,
-                        )
-                      : const Text('Login'),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
