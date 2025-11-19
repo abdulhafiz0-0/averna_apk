@@ -81,7 +81,17 @@ class _LoginPageState extends State<LoginPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const SizedBox(height: 60),
+            const SizedBox(height: 40),
+
+            // Logo at the top
+            CircleAvatar(
+              radius: 60, // Half of the height/width you want
+                backgroundImage: AssetImage('assets/logo.png'),
+                backgroundColor: Colors.transparent,
+            ),
+            const SizedBox(height: 24),
+
+            // Title
             const Text(
               'Learning Center',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
@@ -93,6 +103,8 @@ class _LoginPageState extends State<LoginPage> {
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 32),
+
+            // Form
             Form(
               key: _formKey,
               child: Column(
@@ -123,6 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                       labelText: 'Password',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.lock),
+                      suffixText: 'Forgot password?',
                     ),
                     obscureText: true,
                     validator: (value) {
@@ -166,6 +179,29 @@ class _LoginPageState extends State<LoginPage> {
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text('Sign in', style: TextStyle(fontSize: 16)),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Continuing as guest')),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.black,
+                        side: const BorderSide(color: Colors.grey),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Continue as guest', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'By continuing you agree to the Terms & Privacy',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 32),
                 ],
