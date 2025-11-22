@@ -9,7 +9,7 @@ class PaymentsPage extends StatefulWidget {
 }
 
 class _PaymentsPageState extends State<PaymentsPage> {
-  // TODO: Replace with actual data from database
+  // TODO: Replace with actual data from your database
   final List<Map<String, dynamic>> _payments = [];
 
   @override
@@ -26,11 +26,11 @@ class _PaymentsPageState extends State<PaymentsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.payment_outlined, size: 80, color: Colors.grey[400]),
+                  Icon(Icons.payment_outlined, size: 100, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
                     'No payments recorded',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 20, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -58,14 +58,14 @@ class _PaymentsPageState extends State<PaymentsPage> {
                         color: Colors.white,
                       ),
                     ),
-                    title: Text(payment['studentName']),
+                    title: Text(payment['studentName'], style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('${payment['course']} - ${payment['date']}'),
                     trailing: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '\$${payment['amount']}',
+                          '\$${payment['amount'].toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -88,7 +88,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Navigate to add payment page
+          // TODO: Navigate to Add Payment page or open a dialog
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Add payment functionality - To be implemented')),
           );
