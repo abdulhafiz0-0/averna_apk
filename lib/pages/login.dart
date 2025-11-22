@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -16,32 +17,39 @@ class _LoginPageState extends State<LoginPage> {
   String _selectedRole = '';
 
   void _login() {
-    if (_formKey.currentState!.validate()) {
-      if (_selectedRole.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a role')),
-        );
-        return;
-      }
-
-      setState(() {
-        _isLoading = true;
-      });
-
-      // TODO: Replace this with actual login logic
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() {
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login successful as $_selectedRole!')),
-        );
-
-        // Example navigation to dashboard
-        // Navigator.pushReplacementNamed(context, '/dashboard');
-      });
+  if (_formKey.currentState!.validate()) {
+    if (_selectedRole.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a role')),
+      );
+      return;
     }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    Future.delayed(const Duration(seconds: 1), () {
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Accept test credentials
+      if ((_emailController.text == 'superadmin' && _passwordController.text == 'admin') ||
+          (_emailController.text.contains('@'))) {
+        // Navigate to dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardPage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid username or password')),
+        );
+      }
+    });
   }
+}
 
   @override
   void dispose() {
