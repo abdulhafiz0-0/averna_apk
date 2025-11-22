@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dashboard.dart';
+import 'dashboard.dart'; // Make sure the path is correct
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -10,50 +10,50 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _userController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
   String _selectedRole = '';
 
   void _login() {
-  if (_formKey.currentState!.validate()) {
-    if (_selectedRole.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a role')),
-      );
-      return;
-    }
+    if (_formKey.currentState!.validate()) {
+      if (_selectedRole.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a role')),
+        );
+        return;
+      }
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    Future.delayed(const Duration(seconds: 1), () {
       setState(() {
-        _isLoading = false;
+        _isLoading = true;
       });
 
-      // Accept test credentials
-      if ((_emailController.text == 'superadmin' && _passwordController.text == 'admin') ||
-          (_emailController.text.contains('@'))) {
-        // Navigate to dashboard
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DashboardPage()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid username or password')),
-        );
-      }
-    });
+      Future.delayed(const Duration(seconds: 1), () {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Accept test credentials or any email
+        if ((_userController.text == 'superadmin' && _passwordController.text == 'admin') ||
+            (_userController.text.contains('@'))) {
+          // Navigate to dashboard
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const DashboardPage()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invalid username/email or password')),
+          );
+        }
+      });
+    }
   }
-}
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _userController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -91,15 +91,15 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             const SizedBox(height: 40),
 
-            // Logo at the top
+            // Circular Logo
             CircleAvatar(
-              radius: 60, // Half of the height/width you want
-                backgroundImage: AssetImage('assets/logo.png'),
-                backgroundColor: Colors.transparent,
+              radius: 60,
+              backgroundImage: AssetImage('assets/logo.png'),
+              backgroundColor: Colors.transparent,
             ),
             const SizedBox(height: 24),
 
-            // Title
+            // Title & Subtitle
             const Text(
               'Learning Center',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
@@ -118,20 +118,15 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 children: [
                   TextFormField(
-                    controller: _emailController,
+                    controller: _userController,
                     decoration: const InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'Email or Username',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email),
+                      prefixIcon: Icon(Icons.person),
                     ),
-                    keyboardType: TextInputType.emailAddress,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$')
-                          .hasMatch(value)) {
-                        return 'Enter a valid email';
+                        return 'Please enter your email or username';
                       }
                       return null;
                     },
@@ -150,13 +145,12 @@ class _LoginPageState extends State<LoginPage> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
                       }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
+                      return null; // No minimum length restriction
                     },
                   ),
                   const SizedBox(height: 24),
+
+                  // Role buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -174,6 +168,8 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                   const SizedBox(height: 24),
+
+                  // Sign in button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -189,6 +185,8 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
+
+                  // Guest login button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -206,6 +204,8 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // Terms & privacy
                   const Text(
                     'By continuing you agree to the Terms & Privacy',
                     textAlign: TextAlign.center,
