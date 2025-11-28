@@ -9,8 +9,44 @@ class PaymentsPage extends StatefulWidget {
 }
 
 class _PaymentsPageState extends State<PaymentsPage> {
-  // TODO: Replace with actual data from your database
-  final List<Map<String, dynamic>> _payments = [];
+  // Sample payment data
+  final List<Map<String, dynamic>> _payments = [
+    {
+      'studentName': 'John Doe',
+      'course': 'Mathematics',
+      'date': '2025-11-01',
+      'amount': 120.0,
+      'status': 'Paid',
+    },
+    {
+      'studentName': 'Jane Smith',
+      'course': 'Science',
+      'date': '2025-11-03',
+      'amount': 100.0,
+      'status': 'Unpaid',
+    },
+    {
+      'studentName': 'Ali Khan',
+      'course': 'History',
+      'date': '2025-11-05',
+      'amount': 150.0,
+      'status': 'Pending', // Could mean partially paid
+    },
+    {
+      'studentName': 'Mary Johnson',
+      'course': 'English',
+      'date': '2025-11-06',
+      'amount': 80.0,
+      'status': 'Paid',
+    },
+    {
+      'studentName': 'Ahmed Ali',
+      'course': 'Physics',
+      'date': '2025-11-07',
+      'amount': 90.0,
+      'status': 'Unpaid',
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -44,19 +80,31 @@ class _PaymentsPageState extends State<PaymentsPage> {
               itemCount: _payments.length,
               itemBuilder: (context, index) {
                 final payment = _payments[index];
+                Color statusColor;
+                IconData statusIcon;
+
+                switch (payment['status']) {
+                  case 'Paid':
+                    statusColor = Colors.green;
+                    statusIcon = Icons.check;
+                    break;
+                  case 'Pending':
+                    statusColor = Colors.orange;
+                    statusIcon = Icons.pending;
+                    break;
+                  case 'Unpaid':
+                  default:
+                    statusColor = Colors.red;
+                    statusIcon = Icons.close;
+                    break;
+                }
+
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: payment['status'] == 'Paid' 
-                          ? Colors.green 
-                          : Colors.orange,
-                      child: Icon(
-                        payment['status'] == 'Paid' 
-                            ? Icons.check 
-                            : Icons.pending,
-                        color: Colors.white,
-                      ),
+                      backgroundColor: statusColor,
+                      child: Icon(statusIcon, color: Colors.white),
                     ),
                     title: Text(payment['studentName'], style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('${payment['course']} - ${payment['date']}'),
@@ -73,12 +121,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                         ),
                         Text(
                           payment['status'],
-                          style: TextStyle(
-                            color: payment['status'] == 'Paid' 
-                                ? Colors.green 
-                                : Colors.orange,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: statusColor, fontSize: 12),
                         ),
                       ],
                     ),
@@ -98,3 +141,4 @@ class _PaymentsPageState extends State<PaymentsPage> {
     );
   }
 }
+
