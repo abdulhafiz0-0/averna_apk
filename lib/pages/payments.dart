@@ -11,8 +11,44 @@ class PaymentsPage extends ConsumerStatefulWidget {
 }
 
 class _PaymentsPageState extends ConsumerState<PaymentsPage> {
-  // TODO: Replace with actual data from your database
-  final List<Map<String, dynamic>> _payments = [];
+  // Sample payment data
+  final List<Map<String, dynamic>> _payments = [
+    {
+      'studentName': 'John Doe',
+      'course': 'Mathematics',
+      'date': '2025-11-01',
+      'amount': 120.0,
+      'status': 'Paid',
+    },
+    {
+      'studentName': 'Jane Smith',
+      'course': 'Science',
+      'date': '2025-11-03',
+      'amount': 100.0,
+      'status': 'Unpaid',
+    },
+    {
+      'studentName': 'Ali Khan',
+      'course': 'History',
+      'date': '2025-11-05',
+      'amount': 150.0,
+      'status': 'Pending', // Could mean partially paid
+    },
+    {
+      'studentName': 'Mary Johnson',
+      'course': 'English',
+      'date': '2025-11-06',
+      'amount': 80.0,
+      'status': 'Paid',
+    },
+    {
+      'studentName': 'Ahmed Ali',
+      'course': 'Physics',
+      'date': '2025-11-07',
+      'amount': 90.0,
+      'status': 'Unpaid',
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -127,3 +163,4 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
     );
   }
 }
+
