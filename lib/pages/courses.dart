@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/app_drawer.dart';
 
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -20,7 +19,6 @@ class _CoursesPageState extends State<CoursesPage> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      drawer: const AppDrawer(isAdmin: true),
       body: _courses.isEmpty
           ? Center(
               child: Column(

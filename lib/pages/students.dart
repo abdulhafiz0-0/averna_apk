@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/app_drawer.dart';
 
 class StudentsPage extends StatefulWidget {
   const StudentsPage({super.key});
@@ -28,7 +27,6 @@ class _StudentsPageState extends State<StudentsPage> {
           ),
         ],
       ),
-      drawer: const AppDrawer(isAdmin: true),
       body: _students.isEmpty
           ? Center(
               child: Column(

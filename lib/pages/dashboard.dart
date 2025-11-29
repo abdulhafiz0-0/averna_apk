@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/app_drawer.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -12,7 +11,6 @@ class DashboardPage extends StatelessWidget {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      drawer: const AppDrawer(isAdmin: true), // Set to false for regular users
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: GridView.count(

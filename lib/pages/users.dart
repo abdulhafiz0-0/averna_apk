@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/app_drawer.dart';
 
 class UsersPage extends StatefulWidget {
   const UsersPage({super.key});
@@ -20,7 +19,6 @@ class _UsersPageState extends State<UsersPage> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      drawer: const AppDrawer(isAdmin: true),
       body: _users.isEmpty
           ? Center(
               child: Column(
