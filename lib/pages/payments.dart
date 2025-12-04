@@ -163,4 +163,3 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
     );
   }
 }
-

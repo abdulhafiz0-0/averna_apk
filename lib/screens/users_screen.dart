@@ -49,13 +49,9 @@ class UsersScreen extends ConsumerWidget {
           );
         }
 
-        final theme = Theme.of(context);
-        final secondaryText = AppTheme.secondaryTextColor(context);
-        final cardColor = theme.colorScheme.surface;
-        final isDark = theme.brightness == Brightness.dark;
-
         if (!user.isAdmin) {
           return Scaffold(
+            backgroundColor: AppTheme.lightBackground,
             appBar: AppBar(title: const Text('Users')),
             drawer: AppDrawer(user: user),
             body: Center(
@@ -65,7 +61,7 @@ class UsersScreen extends ConsumerWidget {
                   Icon(
                     Icons.lock_outline,
                     size: 64,
-                    color: secondaryText.withOpacity(0.6),
+                    color: AppTheme.textLight,
                   ),
                   const SizedBox(height: 16),
                   const Text(
@@ -78,7 +74,7 @@ class UsersScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Only administrators can view users.',
-                    style: TextStyle(color: secondaryText),
+                    style: TextStyle(color: AppTheme.textSecondary),
                   ),
                 ],
               ),
@@ -88,6 +84,7 @@ class UsersScreen extends ConsumerWidget {
 
         return usersAsync.when(
           data: (users) => Scaffold(
+            backgroundColor: AppTheme.lightBackground,
             appBar: AppBar(
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,9 +121,7 @@ class UsersScreen extends ConsumerWidget {
                       itemBuilder: (context, index) {
                         final listUser = users[index];
                         final roleColor = _getRoleColor(listUser.role);
-                        final roleBackground = roleColor.withOpacity(isDark ? 0.25 : 0.12);
                         return Card(
-                          color: cardColor,
                           child: InkWell(
                             onTap: () {
                               // TODO: Navigate to user details
@@ -140,7 +135,7 @@ class UsersScreen extends ConsumerWidget {
                                     width: 56,
                                     height: 56,
                                     decoration: BoxDecoration(
-                                      color: roleBackground,
+                                      color: roleColor.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -171,7 +166,7 @@ class UsersScreen extends ConsumerWidget {
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: roleBackground,
+                                            color: roleColor.withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
@@ -192,7 +187,7 @@ class UsersScreen extends ConsumerWidget {
                                               Icon(
                                                 Icons.email_outlined,
                                                 size: 14,
-                                                color: secondaryText,
+                                                color: AppTheme.textSecondary,
                                               ),
                                               const SizedBox(width: 4),
                                               Expanded(
@@ -202,7 +197,7 @@ class UsersScreen extends ConsumerWidget {
                                                       .textTheme
                                                       .bodySmall
                                                       ?.copyWith(
-                                                        color: secondaryText,
+                                                        color: AppTheme.textSecondary,
                                                       ),
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
@@ -218,7 +213,7 @@ class UsersScreen extends ConsumerWidget {
                                               Icon(
                                                 Icons.person_outline,
                                                 size: 14,
-                                                color: secondaryText,
+                                                color: AppTheme.textSecondary,
                                               ),
                                               const SizedBox(width: 4),
                                               Expanded(
@@ -228,7 +223,7 @@ class UsersScreen extends ConsumerWidget {
                                                       .textTheme
                                                       .bodySmall
                                                       ?.copyWith(
-                                                        color: secondaryText,
+                                                        color: AppTheme.textSecondary,
                                                       ),
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
@@ -240,10 +235,10 @@ class UsersScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Icon(
+                                  const Icon(
                                     Icons.arrow_forward_ios,
                                     size: 16,
-                                    color: secondaryText.withOpacity(0.6),
+                                    color: AppTheme.textLight,
                                   ),
                                 ],
                               ),
@@ -272,6 +267,7 @@ class UsersScreen extends ConsumerWidget {
             body: Center(child: CircularProgressIndicator()),
           ),
           error: (error, _) => Scaffold(
+            backgroundColor: AppTheme.lightBackground,
             appBar: AppBar(
               title: const Text('Users'),
             ),

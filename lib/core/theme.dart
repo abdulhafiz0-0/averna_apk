@@ -5,7 +5,9 @@ class AppTheme {
   static const Color primaryBlue = Color(0xFF5B8DEF);
   static const Color darkBlue = Color(0xFF1E3A8A);
   static const Color lightBackground = Color(0xFFF5F7FA);
+  static const Color darkBackground = Color(0xFF0F172A);
   static const Color cardBackground = Color(0xFFFFFFFF);
+  static const Color darkCardBackground = Color(0xFF1F2937);
   static const Color textPrimary = Color(0xFF1F2937);
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textLight = Color(0xFF9CA3AF);
@@ -14,13 +16,8 @@ class AppTheme {
   static const Color warningOrange = Color(0xFFF59E0B);
   static const Color inactiveGrey = Color(0xFFE5E7EB);
   static const Color borderGrey = Color(0xFFD1D5DB);
-  static const Color darkBackground = Color(0xFF0B1120);
-  static const Color darkSurface = Color(0xFF111827);
-  static const Color darkCard = Color(0xFF1F2937);
-  static const Color darkTextPrimary = Color(0xFFE5E7EB);
-  static const Color darkTextSecondary = Color(0xFF9CA3AF);
-  static const Color darkTextLight = Color(0xFF6B7280);
-  static const Color darkBorder = Color(0xFF374151);
+  static const Color secondaryTextColor = Color(0xFF6B7280);
+  
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
@@ -210,29 +207,28 @@ class AppTheme {
     colorScheme: ColorScheme.dark(
       primary: primaryBlue,
       secondary: darkBlue,
-      surface: darkSurface,
+      surface: darkCardBackground,
       background: darkBackground,
       error: errorRed,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
-      onSurface: darkTextPrimary,
-      onBackground: darkTextPrimary,
+      onSurface: Colors.white,
       onError: Colors.white,
     ),
     scaffoldBackgroundColor: darkBackground,
     appBarTheme: const AppBarTheme(
-      backgroundColor: darkSurface,
-      foregroundColor: darkTextPrimary,
+      backgroundColor: darkCardBackground,
+      foregroundColor: Colors.white,
       elevation: 0,
       centerTitle: false,
       titleTextStyle: TextStyle(
-        color: darkTextPrimary,
+        color: Colors.white,
         fontSize: 20,
         fontWeight: FontWeight.w600,
       ),
     ),
     cardTheme: CardThemeData(
-      color: darkCard,
+      color: darkCardBackground,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -258,11 +254,11 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: Colors.white,
+        side: const BorderSide(color: textLight, width: 1.2),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        side: BorderSide(color: Colors.white.withOpacity(0.4), width: 1.5),
         textStyle: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -286,15 +282,15 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: darkSurface,
+      fillColor: darkCardBackground,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: darkBorder, width: 1),
+        borderSide: const BorderSide(color: borderGrey, width: 1),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: darkBorder, width: 1),
+        borderSide: const BorderSide(color: borderGrey, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -308,20 +304,20 @@ class AppTheme {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: errorRed, width: 2),
       ),
-      labelStyle: const TextStyle(color: darkTextSecondary),
-      hintStyle: const TextStyle(color: darkTextLight),
+      labelStyle: const TextStyle(color: Colors.white70),
+      hintStyle: const TextStyle(color: textLight),
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: darkSurface,
-      selectedColor: primaryBlue.withOpacity(0.85),
-      labelStyle: const TextStyle(color: darkTextPrimary),
+      backgroundColor: darkCardBackground,
+      selectedColor: primaryBlue,
+      labelStyle: const TextStyle(color: Colors.white),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
     ),
     dividerTheme: const DividerThemeData(
-      color: darkBorder,
+      color: borderGrey,
       thickness: 1,
       space: 1,
     ),
@@ -329,97 +325,89 @@ class AppTheme {
       displayLarge: TextStyle(
         fontSize: 32,
         fontWeight: FontWeight.bold,
-        color: darkTextPrimary,
+        color: Colors.white,
       ),
       displayMedium: TextStyle(
         fontSize: 28,
         fontWeight: FontWeight.bold,
-        color: darkTextPrimary,
+        color: Colors.white,
       ),
       displaySmall: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: darkTextPrimary,
+        color: Colors.white,
       ),
       headlineLarge: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.w600,
-        color: darkTextPrimary,
+        color: Colors.white,
       ),
       headlineMedium: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-        color: darkTextPrimary,
+        color: Colors.white,
       ),
       headlineSmall: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: darkTextPrimary,
+        color: Colors.white,
       ),
       bodyLarge: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.normal,
-        color: darkTextPrimary,
+        color: Colors.white,
       ),
       bodyMedium: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.normal,
-        color: darkTextPrimary,
+        color: Colors.white,
       ),
       bodySmall: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.normal,
-        color: darkTextSecondary,
+        color: Colors.white70,
       ),
       labelLarge: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
-        color: darkTextPrimary,
+        color: Colors.white,
       ),
       labelMedium: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: darkTextSecondary,
+        color: Colors.white70,
       ),
       labelSmall: TextStyle(
         fontSize: 10,
         fontWeight: FontWeight.w500,
-        color: darkTextLight,
-      ),
-    ),
-    snackBarTheme: const SnackBarThemeData(
-      backgroundColor: darkCard,
-      contentTextStyle: TextStyle(color: darkTextPrimary),
-      behavior: SnackBarBehavior.floating,
-    ),
-    dialogBackgroundColor: darkCard,
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: darkSurface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: textLight,
       ),
     ),
   );
 
-  static Color mutedBackground(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? darkSurface
-        : lightBackground;
-  }
-
-  static Color surfaceColor(BuildContext context) {
-    return Theme.of(context).colorScheme.surface;
-  }
-
   static Color borderColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? darkBorder
-        : borderGrey;
+    final divider = Theme.of(context).dividerColor;
+    if (divider == Colors.transparent) {
+      return borderGrey;
+    }
+    return divider;
   }
 
-  static Color secondaryTextColor(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? darkTextSecondary
-        : textSecondary;
+  static Color mutedBackground(BuildContext context) {
+    final theme = Theme.of(context);
+    final surfaceVariant = theme.colorScheme.surfaceVariant;
+    if (surfaceVariant == Colors.transparent) {
+      return const Color(0xFFF3F4F6);
+    }
+    return surfaceVariant;
+  }
+
+  static Color secondaryTextColorFor(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.textTheme.bodySmall?.color;
+    if (color == null) {
+      return textSecondary;
+    }
+    return color;
   }
 }

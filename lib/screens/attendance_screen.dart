@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/theme.dart';
-import '../../providers/providers.dart';
-import '../../widgets/app_drawer.dart';
-import '../../models/student.dart';
+import '../core/theme.dart';
+import '../providers/providers.dart';
+import '../widgets/app_drawer.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
   const AttendanceScreen({super.key});
@@ -15,15 +14,40 @@ class AttendanceScreen extends ConsumerStatefulWidget {
 }
 
 class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
+  int? _selectedStudentId;
   int? _selectedCourseId;
-  final Map<int, AttendanceStatus> _attendanceStatus = {};
+  DateTime _selectedDate = DateTime.now();
+  bool _isAbsent = true;
+  bool _chargeMoney = false;
+  final TextEditingController _reasonController = TextEditingController();
   bool _isSubmitting = false;
 
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
   Future<void> _submit(BuildContext context) async {
-    if (_selectedCourseId == null || _attendanceStatus.isEmpty) {
+    if (_selectedStudentId == null || _selectedCourseId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a course and mark attendance.'),
+          content: Text('Please choose both a student and a course.'),
         ),
       );
       return;
@@ -35,47 +59,37 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
     final attendanceService = ref.read(attendanceServiceProvider);
     final formatter = DateFormat('yyyy-MM-dd');
-    final dateStr = formatter.format(DateTime.now());
 
     try {
-      for (var entry in _attendanceStatus.entries) {
-        final studentId = entry.key;
-        final attendanceStatus = entry.value;
-
-        // Map status to API parameters:
-        // Present: isAbsent=false, charge_money=true
-        // Absent Excused: isAbsent=true, charge_money=false
-        // Absent Unexcused: isAbsent=true, charge_money=true
-        bool isAbsent = attendanceStatus.type != AttendanceType.present;
-        bool chargeMoney = attendanceStatus.type != AttendanceType.absentExcused;
-
-        await attendanceService.checkAttendance(
-          studentId: studentId,
-          courseId: _selectedCourseId!,
-          date: dateStr,
-          isAbsent: isAbsent,
-          reason: attendanceStatus.reason ?? '',
-          chargeMoney: chargeMoney,
-        );
-      }
+      await attendanceService.checkAttendance(
+        studentId: _selectedStudentId!,
+        courseId: _selectedCourseId!,
+        date: formatter.format(_selectedDate),
+        isAbsent: _isAbsent,
+        reason: _reasonController.text.trim().isEmpty
+            ? null
+            : _reasonController.text.trim(),
+        chargeMoney: _chargeMoney,
+      );
 
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Attendance submitted successfully.')),
+        const SnackBar(content: Text('Attendance saved.')),
       );
       setState(() {
-        _attendanceStatus.clear();
-        _selectedCourseId = null;
+        _reasonController.clear();
+        _isAbsent = true;
+        _chargeMoney = false;
       });
     } catch (error) {
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit attendance: $error')),
+        SnackBar(content: Text('Failed to save attendance: $error')),
       );
     } finally {
       if (mounted) {
@@ -92,8 +106,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final studentsAsync = ref.watch(studentsProvider);
     final coursesAsync = ref.watch(coursesProvider);
 
-    final now = DateTime.now();
-    final timeLabel = DateFormat('EEEE, h:mm a').format(now);
+    final dateLabel = DateFormat.yMMMMd().format(_selectedDate);
 
     return userAsync.when(
       data: (user) {
@@ -103,11 +116,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           );
         }
 
-        if (studentsAsync.hasError || coursesAsync.hasError) {
+        if (studentsAsync.hasError) {
           return Scaffold(
             appBar: AppBar(title: const Text('Attendance')),
             body: Center(
-              child: Text('Failed to load data'),
+              child: Text('Failed to load students: ${studentsAsync.error}'),
+            ),
+          );
+        }
+
+        if (coursesAsync.hasError) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Attendance')),
+            body: Center(
+              child: Text('Failed to load courses: ${coursesAsync.error}'),
             ),
           );
         }
@@ -115,174 +137,138 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         final students = studentsAsync.value ?? [];
         final courses = coursesAsync.value ?? [];
 
-        final selectedCourse = _selectedCourseId != null
-            ? courses.where((c) => c.id == _selectedCourseId).firstOrNull
-            : null;
-
-        final studentsInCourse = _selectedCourseId != null
-            ? students
-                .where((s) => s.courses.contains(_selectedCourseId))
-                .toList()
-            : [];
-
         return Scaffold(
           appBar: AppBar(
             title: const Text('Attendance'),
           ),
           drawer: user != null ? AppDrawer(user: user) : null,
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: DropdownButtonFormField<int>(
-                    value: _selectedCourseId,
-                    decoration: InputDecoration(
-                      labelText: 'Select Course',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    items: courses
-                        .map(
-                          (course) => DropdownMenuItem<int>(
-                            value: course.id,
-                            child: Text(course.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCourseId = value;
-                        _attendanceStatus.clear();
-                      });
-                    },
-                  ),
-                ),
-                if (_selectedCourseId != null && selectedCourse != null) ...[
-                  Container(
-                    color: const Color(0xFFF0F4FF),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          selectedCourse.name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Mark attendance',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          timeLabel,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.textSecondary,
-                              ),
-                        ),
-                        Text(
-                          '${studentsInCourse.length} students',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.textSecondary,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height - 350,
-                    ),
-                    child: studentsInCourse.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Text(
-                                'No students enrolled in this course',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: studentsInCourse.length,
-                            itemBuilder: (context, index) {
-                              final student = studentsInCourse[index];
-                              final status = _attendanceStatus[student.id];
-
-                              return _StudentAttendanceCard(
-                                student: student,
-                                status: status,
-                                onStatusChanged: (newStatus) {
-                                  setState(() {
-                                    _attendanceStatus[student.id] = newStatus;
-                                  });
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ],
-            ),
-          ),
-          bottomNavigationBar: _selectedCourseId != null
-              ? Padding(
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Card(
+                child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isSubmitting
-                              ? null
-                              : () => _submit(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4A7FD8),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            _isSubmitting ? 'Submitting...' : 'Submit attendance',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
+                      Text(
+                        'Record attendance',
+                        style: Theme.of(context).textTheme.headlineLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<int>(
+                        value: _selectedStudentId,
+                        decoration: const InputDecoration(
+                          labelText: 'Student',
+                        ),
+                        items: students
+                            .map(
+                              (student) => DropdownMenuItem<int>(
+                                value: student.id,
+                                child: Text(student.fullName),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedStudentId = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<int>(
+                        value: _selectedCourseId,
+                        decoration: const InputDecoration(
+                          labelText: 'Course',
+                        ),
+                        items: courses
+                            .map(
+                              (course) => DropdownMenuItem<int>(
+                                value: course.id,
+                                child: Text(course.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCourseId = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Date'),
+                        subtitle: Text(dateLabel),
+                        trailing: const Icon(Icons.calendar_today),
+                        onTap: () => _pickDate(context),
+                      ),
+                      const Divider(),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Marked absent'),
+                        value: _isAbsent,
+                        onChanged: (value) {
+                          setState(() {
+                            _isAbsent = value;
+                          });
+                        },
+                      ),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Charge fee for absence'),
+                        subtitle: const Text(
+                          'Enable if the student should be charged for the missed lesson.',
+                        ),
+                        value: _chargeMoney,
+                        onChanged: (value) {
+                          setState(() {
+                            _chargeMoney = value;
+                          });
+                        },
+                      ),
+                      TextField(
+                        controller: _reasonController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Reason (optional)',
+                          alignLabelWithHint: true,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'All changes are saved locally until you submit.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
-                        textAlign: TextAlign.center,
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSubmitting ? null : () => _submit(context),
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.save),
+                          label: Text(_isSubmitting ? 'Saving...' : 'Save'),
+                        ),
                       ),
+                      if (students.isEmpty || courses.isEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'Add students and courses first to record attendance.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: AppTheme.textSecondary),
+                        ),
+                      ],
                     ],
                   ),
-                )
-              : null,
+                ),
+              ),
+            ],
+          ),
         );
       },
       loading: () => const Scaffold(
@@ -291,164 +277,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       error: (error, _) => Scaffold(
         body: Center(
           child: Text('Failed to load user: $error'),
-        ),
-      ),
-    );
-  }
-}
-
-enum AttendanceType { present, absentExcused, absentUnexcused }
-
-class AttendanceStatus {
-  final AttendanceType type;
-  final String? reason;
-
-  AttendanceStatus({required this.type, this.reason});
-}
-
-class _StudentAttendanceCard extends StatelessWidget {
-  final Student student;
-  final AttendanceStatus? status;
-  final Function(AttendanceStatus) onStatusChanged;
-
-  const _StudentAttendanceCard({
-    required this.student,
-    required this.status,
-    required this.onStatusChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final initials = student.fullName
-        .split(' ')
-        .where((word) => word.isNotEmpty)
-        .map((e) => e[0])
-        .take(2)
-        .join()
-        .toUpperCase();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: const Color(0xFFE0E7FF),
-            child: Text(
-              initials,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF4A7FD8),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  student.fullName,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  'ID: ${student.id}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _AttendanceButton(
-                  label: 'Present',
-                  color: const Color(0xFF10B981),
-                  isSelected: status?.type == AttendanceType.present,
-                  onPressed: () => onStatusChanged(
-                    AttendanceStatus(type: AttendanceType.present),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                _AttendanceButton(
-                  label: 'Absent',
-                  color: const Color(0xFFF59E0B),
-                  isSelected: status?.type == AttendanceType.absentUnexcused,
-                  onPressed: () => onStatusChanged(
-                    AttendanceStatus(type: AttendanceType.absentUnexcused),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                _AttendanceButton(
-                  label: 'Late',
-                  color: const Color(0xFFFCD34D),
-                  isSelected: status?.type == AttendanceType.absentExcused,
-                  onPressed: () => onStatusChanged(
-                    AttendanceStatus(
-                      type: AttendanceType.absentExcused,
-                      reason: 'Late',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AttendanceButton extends StatelessWidget {
-  final String label;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onPressed;
-
-  const _AttendanceButton({
-    required this.label,
-    required this.color,
-    required this.isSelected,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      child: Ink(
-        decoration: BoxDecoration(
-          color: isSelected ? color : color.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : color,
-              ),
-            ),
-          ),
         ),
       ),
     );
