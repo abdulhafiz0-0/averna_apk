@@ -27,6 +27,11 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
 
     return userAsync.when(
       data: (user) {
+        final theme = Theme.of(context);
+        final cardColor = theme.colorScheme.surface;
+        final accentBackground = AppTheme.successGreen.withOpacity(
+          theme.brightness == Brightness.dark ? 0.25 : 0.15,
+        );
         if (studentsAsync.isLoading || paymentsAsync.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -68,6 +73,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 Card(
+                  color: cardColor,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: DropdownButtonFormField<int?>(
@@ -98,6 +104,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                 const SizedBox(height: 16),
                 if (payments.isEmpty)
                   Card(
+                    color: cardColor,
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Center(
@@ -126,10 +133,11 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
                           : dateFormatter.format(parsedDate);
 
                       return Card(
+                        color: cardColor,
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: AppTheme.successGreen.withOpacity(0.2),
+                            backgroundColor: accentBackground,
                             child: const Icon(
                               Icons.attach_money,
                               color: AppTheme.successGreen,

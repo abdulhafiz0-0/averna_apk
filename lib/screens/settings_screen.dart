@@ -52,6 +52,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserProvider);
+    final themeMode = ref.watch(themeModeProvider);
+    final themeNotifier = ref.read(themeModeProvider.notifier);
 
     return userAsync.when(
       data: (user) => Scaffold(
@@ -76,11 +78,40 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SwitchListTile.adaptive(
+                  ListTile(
+                    leading: const Icon(Icons.color_lens_outlined),
+                    title: const Text('Appearance'),
+                    subtitle: Text(_themeModeDescription(themeMode)),
+                  ),
+                  RadioListTile<ThemeMode>(
+                    title: const Text('Use system setting'),
+                    value: ThemeMode.system,
+                    groupValue: themeMode,
+                    onChanged: (mode) {
+                      if (mode != null) {
+                        themeNotifier.setThemeMode(mode);
+                      }
+                    },
+                  ),
+                  RadioListTile<ThemeMode>(
+                    title: const Text('Light mode'),
+                    value: ThemeMode.light,
+                    groupValue: themeMode,
+                    onChanged: (mode) {
+                      if (mode != null) {
+                        themeNotifier.setThemeMode(mode);
+                      }
+                    },
+                  ),
+                  RadioListTile<ThemeMode>(
                     title: const Text('Dark mode'),
-                    subtitle: const Text('Appearance settings will arrive soon.'),
-                    value: false,
-                    onChanged: null,
+                    value: ThemeMode.dark,
+                    groupValue: themeMode,
+                    onChanged: (mode) {
+                      if (mode != null) {
+                        themeNotifier.setThemeMode(mode);
+                      }
+                    },
                   ),
                   const Divider(height: 0),
                   ListTile(
@@ -127,5 +158,16 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+String _themeModeDescription(ThemeMode mode) {
+  switch (mode) {
+    case ThemeMode.light:
+      return 'Currently using the light theme.';
+    case ThemeMode.dark:
+      return 'Currently using the dark theme.';
+    case ThemeMode.system:
+      return 'Following the device appearance.';
   }
 }

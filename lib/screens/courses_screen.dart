@@ -50,7 +50,6 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
         data: (courses) {
           final filteredCourses = _filterCourses(courses);
           return Scaffold(
-            backgroundColor: AppTheme.lightBackground,
             appBar: AppBar(
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

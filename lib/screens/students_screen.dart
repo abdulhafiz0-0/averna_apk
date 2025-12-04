@@ -16,7 +16,7 @@ class StudentsScreen extends ConsumerWidget {
     return currentUserAsync.when(
       data: (user) {
         final theme = Theme.of(context);
-  final secondaryText = AppTheme.secondaryTextColorFor(context);
+        final secondaryText = AppTheme.secondaryTextColor(context);
         final borderColor = AppTheme.borderColor(context);
         final cardColor = theme.colorScheme.surface;
         final isDark = theme.brightness == Brightness.dark;
