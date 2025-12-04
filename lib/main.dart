@@ -14,6 +14,7 @@ import 'screens/attendance_screen.dart';
 import 'screens/payments_screen.dart';
 import 'screens/users_screen.dart';
 import 'screens/settings_screen.dart';
+import 'pages/payments.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

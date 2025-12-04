@@ -179,6 +179,7 @@ class _CourseDetailsScreenState extends ConsumerState<CourseDetailsScreen> {
         _hydrateForm(course);
 
         return Scaffold(
+          backgroundColor: AppTheme.lightBackground,
           appBar: AppBar(
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
