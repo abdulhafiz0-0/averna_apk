@@ -1,3 +1,4 @@
+// lib/screens/payment_screens.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -16,49 +17,113 @@ class PaymentsScreen extends ConsumerStatefulWidget {
 
 class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   int? _studentFilter;
+  int? _courseFilter;
+  String _selectedRole = 'Admin'; // default per mock
+   // placeholder if you add course filtering
 
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
     final studentsAsync = ref.watch(studentsProvider);
+    final coursesAsync = ref.watch(coursesProvider);
     final selectedStudentId = _studentFilter;
     final paymentsAsync = ref.watch(paymentsProvider(selectedStudentId));
     final currencyFormatter = NumberFormat.simpleCurrency();
+    final dateFormatter = DateFormat.yMMMd();
 
     return userAsync.when(
       data: (user) {
-        if (studentsAsync.isLoading || paymentsAsync.isLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+        // Loading states handled below
+        if (studentsAsync.isLoading || coursesAsync.isLoading || paymentsAsync.isLoading) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
         if (studentsAsync.hasError) {
           return Scaffold(
             appBar: AppBar(title: const Text('Payments')),
-            body: Center(
-              child: Text('Failed to load students: ${studentsAsync.error}'),
-            ),
+            body: Center(child: Text('Failed to load students: ${studentsAsync.error}')),
+          );
+        }
+
+        if (coursesAsync.hasError) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Payments')),
+            body: Center(child: Text('Failed to load courses: ${coursesAsync.error}')),
           );
         }
 
         if (paymentsAsync.hasError) {
           return Scaffold(
             appBar: AppBar(title: const Text('Payments')),
-            body: Center(
-              child: Text('Failed to load payments: ${paymentsAsync.error}'),
-            ),
+            body: Center(child: Text('Failed to load payments: ${paymentsAsync.error}')),
           );
         }
 
         final students = studentsAsync.value ?? [];
-        final payments = paymentsAsync.value ?? <Payment>[];
-        final dateFormatter = DateFormat.yMMMMd();
+        final courses = coursesAsync.value ?? [];
+        var payments = paymentsAsync.value ?? <Payment>[];
 
+        // Apply client-side course filter if selected
+        if (_courseFilter != null) {
+          payments = payments.where((p) => p.courseId == _courseFilter).toList();
+        }
+
+        // Helper: find student full name by id
+String studentNameFor(dynamic id) {
+  if (id == null) return 'Unknown';
+  if (students.isEmpty) return 'Student';
+
+  // firstWhere must return a Student, so return students.first when not found
+  final s = students.firstWhere(
+    (st) => st.id == id,
+    orElse: () => students.first,
+  );
+
+  // If the model uses fullName or name, try both safely:
+  try {
+    final name = (s as dynamic).fullName ?? (s as dynamic).name;
+    return name?.toString() ?? 'Student';
+  } catch (_) {
+    return 'Student';
+  }
+}
+
+
+        // Determine payment status robustly (many models are different).
+        String paymentStatus(dynamic p) {
+          try {
+            // prefer explicit status
+            final status = (p as dynamic).status;
+            if (status != null) return status.toString();
+          } catch (_) {}
+          try {
+            // possible boolean flag
+            final isPaid = (p as dynamic).isPaid;
+            if (isPaid != null) return (isPaid == true) ? 'Paid' : 'Unpaid';
+          } catch (_) {}
+          // fallback: consider payments with a non-null paymentMethod as paid (best-effort)
+          try {
+            final pm = (p as dynamic).paymentMethod;
+            if (pm != null && pm.toString().isNotEmpty) return 'Paid';
+          } catch (_) {}
+          return 'Unpaid';
+        }
+
+        // Split into upcoming (not-paid) and history (paid)
+        final upcoming = <Payment>[];
+        final history = <Payment>[];
+        for (final p in payments) {
+          final status = paymentStatus(p);
+          if (status.toLowerCase() == 'paid') {
+            history.add(p);
+          } else {
+            upcoming.add(p);
+          }
+        }
+
+        // UI
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Payments'),
-          ),
+          appBar: AppBar(title: const Text('Payments')),
           drawer: user != null ? AppDrawer(user: user) : null,
           body: RefreshIndicator(
             onRefresh: () async {
@@ -67,103 +132,226 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: DropdownButtonFormField<int?>(
-                      value: _studentFilter,
-                      decoration: const InputDecoration(
-                        labelText: 'Filter by student',
+                
+                const SizedBox(height: 12),
+
+                // Filters header
+                const Text('Filters', style: TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+
+                // Filters area (two outlined boxes per mock)
+                Row(
+                  children: [
+                    
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          // open course selector
+                          final sel = await showDialog<int?>(
+                            context: context,
+                            builder: (_) => _CourseSelectDialog(
+                              courses: courses,
+                              selected: _courseFilter,
+                            ),
+                          );
+                          if (sel != null) {
+                            setState(() => _courseFilter = sel);
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        child: Text(
+                          _courseFilter == null
+                              ? 'Course: All'
+                              : 'Course: ${_courseNameFor(courses, _courseFilter)}',
+                          style: const TextStyle(color: Colors.black87),
+                        ),
                       ),
-                      items: [
-                        const DropdownMenuItem<int?>(
-                          value: null,
-                          child: Text('All students'),
-                        ),
-                        ...students.map(
-                          (student) => DropdownMenuItem<int?>(
-                            value: student.id,
-                            child: Text(student.fullName),
-                          ),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _studentFilter = value;
-                        });
-                      },
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                if (payments.isEmpty)
+
+                const SizedBox(height: 20),
+
+                // Upcoming payments section
+                const Text('Upcoming Payments', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+
+                if (upcoming.isEmpty)
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Center(
-                        child: Text(
-                          selectedStudentId == null
-                              ? 'No payments recorded yet.'
-                              : 'No payments recorded for the selected student.',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      ),
+                      padding: const EdgeInsets.all(20),
+                      child: Center(child: Text(selectedStudentId == null ? 'No upcoming payments.' : 'No upcoming payments for selected student.')),
                     ),
                   )
                 else
-                  ...payments.map(
-                    (payment) {
-                      String? studentName;
-                      for (final student in students) {
-                        if (student.id == payment.studentId) {
-                          studentName = student.fullName;
-                          break;
-                        }
-                      }
-                      final parsedDate = DateTime.tryParse(payment.date);
-                      final dateLabel = parsedDate == null
-                          ? payment.date
-                          : dateFormatter.format(parsedDate);
+                  ...upcoming.map((payment) {
+                    final studentName = studentNameFor(payment.studentId);
+                    final parsedDate = DateTime.tryParse(payment.date);
+                    final dateLabel = parsedDate == null ? payment.date : dateFormatter.format(parsedDate);
+                    final amt = currencyFormatter.format(payment.amount);
+                    final status = paymentStatus(payment);
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: AppTheme.successGreen.withOpacity(0.2),
-                            child: const Icon(
-                              Icons.attach_money,
-                              color: AppTheme.successGreen,
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        child: Row(
+                          children: [
+                            // avatar placeholder
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
+                              child: const Icon(Icons.person, color: Colors.grey),
                             ),
-                          ),
-                          title: Text(currencyFormatter.format(payment.amount)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(dateLabel),
-                              if (studentName != null)
-                                Text('Student: $studentName'),
-                              if (payment.description != null && payment.description!.isNotEmpty)
-                                Text('Note: ${payment.description}'),
-                            ],
-                          ),
-                          trailing: payment.paymentMethod == null
-                              ? null
-                              : Chip(
-                                  label: Text(payment.paymentMethod!),
+                            const SizedBox(width: 12),
+
+                            // left column: name + meta
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(studentName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text('Student ID: ${payment.studentId}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                  Text('Course ID: ${payment.courseId}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                  const SizedBox(height: 4),
+                                  Text('Due: $dateLabel', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                  if (payment.description != null && payment.description!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      payment.description!,
+                                      style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+
+                            // right column: amount + badge
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(amt, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: status.toLowerCase() == 'paid' ? AppTheme.successGreen : Colors.orange,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    status,
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
                                 ),
+                                if (payment.id != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text('ID: ${payment.id}', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                                ],
+                              ],
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  }).toList(),
+
+                const SizedBox(height: 18),
+
+                // Payment history section
+                const Text('Payment History', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+
+                if (history.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Center(child: Text(selectedStudentId == null ? 'No payment history.' : 'No payment history for selected student.')),
+                    ),
+                  )
+                else
+                  ...history.map((payment) {
+                    final studentName = studentNameFor(payment.studentId);
+                    final parsedDate = DateTime.tryParse(payment.date);
+                    final dateLabel = parsedDate == null ? payment.date : dateFormatter.format(parsedDate);
+                    final amt = currencyFormatter.format(payment.amount);
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
+                              child: const Icon(Icons.person, color: Colors.grey),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(studentName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text('Student ID: ${payment.studentId}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                  Text('Course ID: ${payment.courseId}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                  const SizedBox(height: 4),
+                                  Text('Paid on: $dateLabel', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                  if (payment.description != null && payment.description!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      payment.description!,
+                                      style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(amt, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.successGreen,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Text('Paid', style: TextStyle(color: Colors.white)),
+                                ),
+                                if (payment.id != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text('ID: ${payment.id}', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+
+                const SizedBox(height: 40),
               ],
             ),
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Payment creation is not implemented yet.'),
-                ),
+                const SnackBar(content: Text('Payment creation is not implemented yet.')),
               );
             },
             icon: const Icon(Icons.add),
@@ -171,14 +359,122 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
           ),
         );
       },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) => Scaffold(body: Center(child: Text('Failed to load user: $error'))),
+    );
+  }
+
+  Widget _roleChip(String role) {
+    final selected = _selectedRole == role;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedRole = role),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? Colors.blue : Colors.grey[100],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? Colors.blue : Colors.grey.shade300),
+        ),
+        child: Text(role, style: TextStyle(color: selected ? Colors.white : Colors.black87)),
       ),
-      error: (error, _) => Scaffold(
-        body: Center(
-          child: Text('Failed to load user: $error'),
+    );
+  }
+}
+
+String _courseNameFor(List<dynamic> courses, int? id) {
+  if (id == null) return 'All';
+  if (courses.isEmpty) return 'Course';
+  dynamic match;
+  try {
+    match = courses.firstWhere(
+      (c) => (c as dynamic).id == id,
+      orElse: () => courses.first,
+    );
+  } catch (_) {
+    return 'Course';
+  }
+  try {
+    return ((match as dynamic).name ?? '').toString();
+  } catch (_) {
+    return 'Course';
+  }
+}
+
+class _CourseSelectDialog extends StatelessWidget {
+  final List<dynamic> courses;
+  final int? selected;
+
+  const _CourseSelectDialog({Key? key, required this.courses, this.selected})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Select course'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.separated(
+          shrinkWrap: true,
+          itemCount: courses.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final c = courses[index];
+            final id = (c as dynamic).id as int?;
+            final name = (c as dynamic).name as String?;
+            return ListTile(
+              title: Text(name ?? 'Course'),
+              selected: selected == id,
+              onTap: () => Navigator.of(context).pop(id),
+            );
+          },
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: const Text('Clear'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Simple dialog that returns selected student id or null.
+class _StudentSelectDialog extends StatelessWidget {
+  final List<dynamic> students;
+  final int? selected;
+
+  const _StudentSelectDialog({Key? key, required this.students, this.selected}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Select student'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.separated(
+          shrinkWrap: true,
+          itemCount: students.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final s = students[index];
+            final id = (s as dynamic).id as int?;
+            final name = (s as dynamic).fullName as String?;
+            return ListTile(
+              title: Text(name ?? 'Student'),
+              selected: selected == id,
+              onTap: () => Navigator.of(context).pop(id),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+      ],
     );
   }
 }

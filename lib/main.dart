@@ -14,6 +14,7 @@ import 'screens/attendance_screen.dart';
 import 'screens/payments_screen.dart';
 import 'screens/users_screen.dart';
 import 'screens/settings_screen.dart';
+import 'pages/login.dart';
 import 'pages/payments.dart';
 
 void main() async {
@@ -57,6 +58,8 @@ class MyApp extends ConsumerWidget {
         '/archived': (context) => const ArchivedStudentsScreen(),
         '/users': (context) => const UsersScreen(),
         '/settings': (context) => const SettingsScreen(),
+        '/login1': (context) => const LoginPage(),
+        '/payments1': (context) => const PaymentsPage(),
       },
     );
   }

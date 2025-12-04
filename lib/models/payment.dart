@@ -37,7 +37,10 @@ class Payment {
   final int? id;
   @JsonKey(name: 'student_id', fromJson: _intFromJson, toJson: _intToJson)
   final int studentId;
-  @JsonKey(name: 'amount', fromJson: _doubleFromJson, toJson: _doubleToJson)
+  @JsonKey(name: 'course_id', fromJson: _intFromJson, toJson: _intToJson)
+  final int courseId;
+  // Backend sends this field as `money`
+  @JsonKey(name: 'money', fromJson: _doubleFromJson, toJson: _doubleToJson)
   final double amount;
   final String date;
   final String? description;
@@ -47,6 +50,7 @@ class Payment {
   Payment({
     this.id,
     required this.studentId,
+    required this.courseId,
     required this.amount,
     required this.date,
     this.description,
