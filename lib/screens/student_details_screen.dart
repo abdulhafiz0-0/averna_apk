@@ -14,6 +14,15 @@ String _formatDate(String rawDate) {
   return DateFormat.yMMMMd().format(parsed);
 }
 
+String _initials(String fullName) {
+  final parts = fullName.split(' ').where((e) => e.isNotEmpty).toList();
+  if (parts.isEmpty) return 'S';
+  if (parts.length >= 2) {
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+  return parts[0][0].toUpperCase();
+}
+
 class StudentDetailsScreen extends ConsumerWidget {
   const StudentDetailsScreen({super.key});
 
@@ -21,11 +30,14 @@ class StudentDetailsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final studentId = ModalRoute.of(context)?.settings.arguments as int?;
     final userAsync = ref.watch(currentUserProvider);
+    final theme = Theme.of(context);
+    final secondaryText = AppTheme.secondaryTextColorFor(context);
 
     if (studentId == null) {
-      return const Scaffold(
+      return Scaffold(
+        backgroundColor: const Color(0xFFF3F4F8),
         body: Center(
-          child: Text('Student not found.'),
+          child: Text('Student not found.', style: theme.textTheme.titleMedium),
         ),
       );
     }
@@ -37,140 +49,336 @@ class StudentDetailsScreen extends ConsumerWidget {
       data: (user) => studentAsync.when(
         data: (student) {
           final courseLookup = <int, String>{
-            for (final course in coursesAsync.value ?? []) course.id: course.name,
+            for (final course in coursesAsync.value ?? [])
+              course.id: course.name,
           };
 
           return Scaffold(
+            backgroundColor: const Color(0xFFF3F4F8),
             appBar: AppBar(
-              title: Text(student.fullName),
+              elevation: 0,
+              backgroundColor: theme.colorScheme.surface,
+              title: Text(
+                'Student details',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             drawer: user != null ? AppDrawer(user: user) : null,
-            body: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          student.fullName,
-                          style: Theme.of(context).textTheme.headlineLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Student ID: ${student.id}'),
-                        const SizedBox(height: 8),
-                        Text('Starting date: ${_formatDate(student.startingDate)}'),
-                        if (student.numLesson != null) ...[
-                          const SizedBox(height: 8),
-                          Text('Lessons taken: ${student.numLesson}'),
-                        ],
-                        if (student.totalMoney != null) ...[
-                          const SizedBox(height: 8),
-                          Text('Total paid: \$${student.totalMoney!.toStringAsFixed(2)}'),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Courses',
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        if (student.courses.isEmpty)
-                          const Text('No courses assigned yet.')
-                        else
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: student.courses
-                                .map(
-                                  (courseId) => Chip(
-                                    label: Text(courseLookup[courseId] ?? 'Course #$courseId'),
-                                  ),
-                                )
-                                .toList(),
+            body: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    // Header card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(
+                              theme.brightness == Brightness.dark ? 0.35 : 0.06,
+                            ),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
                           ),
-                      ],
-                    ),
-                  ),
-                ),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Attendance history',
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        if (student.attendance == null || student.attendance!.isEmpty)
-                          const Text('No attendance records yet.')
-                        else
-                          ...student.attendance!.map(
-                            (record) => Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppTheme.lightBackground,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _formatDate(record.date),
-                                    style: Theme.of(context).textTheme.headlineSmall,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(record.isAbsent ? 'Absent' : 'Present'),
-                                  if (record.reason != null && record.reason!.isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Text('Reason: ${record.reason}'),
-                                  ],
-                                  if (record.chargeMoney != null) ...[
-                                    const SizedBox(height: 4),
-                                    Text('Charged: ${record.chargeMoney! ? 'Yes' : 'No'}'),
-                                  ],
-                                ],
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 26,
+                            backgroundColor: AppTheme.primaryBlue.withOpacity(
+                              0.12,
+                            ),
+                            child: Text(
+                              _initials(student.fullName),
+                              style: const TextStyle(
+                                color: AppTheme.primaryBlue,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 18,
                               ),
                             ),
                           ),
-                      ],
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  student.fullName,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'ID: ${student.id}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: secondaryText,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Start: ${_formatDate(student.startingDate)}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+
+                    // Stats card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _StatTile(
+                              label: 'Lessons',
+                              value: student.numLesson?.toString() ?? '—',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _StatTile(
+                              label: 'Total paid',
+                              value: student.totalMoney != null
+                                  ? '\$${student.totalMoney!.toStringAsFixed(2)}'
+                                  : '—',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Courses
+                    _SectionCard(
+                      title: 'Courses',
+                      child: student.courses.isEmpty
+                          ? Text(
+                              'No courses assigned yet.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: secondaryText,
+                              ),
+                            )
+                          : Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: student.courses
+                                  .map(
+                                    (courseId) => Chip(
+                                      label: Text(
+                                        courseLookup[courseId] ??
+                                            'Course #$courseId',
+                                      ),
+                                      backgroundColor: AppTheme.primaryBlue
+                                          .withOpacity(0.08),
+                                      labelStyle: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: AppTheme.primaryBlue,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Attendance
+                    _SectionCard(
+                      title: 'Attendance history',
+                      child:
+                          (student.attendance == null ||
+                              student.attendance!.isEmpty)
+                          ? Text(
+                              'No attendance records yet.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: secondaryText,
+                              ),
+                            )
+                          : Column(
+                              children: student.attendance!.map((record) {
+                                final statusText = record.isAbsent
+                                    ? 'Absent'
+                                    : 'Present';
+                                final statusColor = record.isAbsent
+                                    ? Colors.redAccent
+                                    : Colors.green;
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.lightBackground,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            _formatDate(record.date),
+                                            style: theme.textTheme.titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: statusColor.withOpacity(
+                                                0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              statusText,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: statusColor,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (record.reason != null &&
+                                          record.reason!.isNotEmpty) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'Reason: ${record.reason}',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(color: secondaryText),
+                                        ),
+                                      ],
+                                      if (record.chargeMoney != null) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'Charged: ${record.chargeMoney! ? 'Yes' : 'No'}',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(color: secondaryText),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         },
-        loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        loading: () =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
         error: (error, _) => Scaffold(
           appBar: AppBar(),
-          body: Center(
-            child: Text('Failed to load student: $error'),
+          body: Center(child: Text('Failed to load student: $error')),
+        ),
+      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) =>
+          const Scaffold(body: Center(child: Text('Failed to load user'))),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _SectionCard({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final secondaryText = AppTheme.secondaryTextColorFor(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          DefaultTextStyle(
+            style: theme.textTheme.bodyMedium!.copyWith(color: secondaryText),
+            child: child,
+          ),
+        ],
       ),
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatTile({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final secondaryText = AppTheme.secondaryTextColorFor(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.lightBackground,
+        borderRadius: BorderRadius.circular(12),
       ),
-      error: (error, _) => Scaffold(
-        body: Center(
-          child: Text('Failed to load user: $error'),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(color: secondaryText),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
